@@ -8,10 +8,16 @@ RASA_URL = "http://localhost:5005/webhooks/rest/webhook"
 MODEL = "llama3"
 TOPIC_LIST = [
     "how to connect a projector",
+    "how to Operating the projector"
     "how to reset the device",
+    "how to Managing the lamp",
+    "how to Managing content,playlists, and storage",
     "how to check lamp hours",
+    "how to Working with channels",
     "what is the current projector model",
-    "how to fix keystone issue"
+    "how to Managing color setting files",
+    "how to fix keystone issue",
+    "how to work with Test patterns"
 ]
 
 def generate_questions(topic, num_questions=5):
