@@ -1,0 +1,35 @@
+version: '3.1'
+nlu:
+- intent: query_knowledge_base
+  examples: "- Here are five natural-sounding ways someone might ask \"How to set
+    up a projector?\":\n- \"Hey, I just got this new projector and I'm not sure how
+    to get it working. Can you walk me through the setup process?\"\n- \"I'm trying
+    to watch some movies tonight and my friend lent me his projector, but I have no
+    idea how to hook it up. Do you know where I should start?\"\n- \"I just moved
+    into a new apartment and I want to set up my home theater system, but I've never
+    used a projector before. Can you give me some tips on how to get started?\"\n\
+    - \"My kids and I love having movie nights at home, but we don't have a TV in
+    the living room. I just bought a projector and was wondering if you could help
+    me figure out how to set it up?\"\n- \"I'm trying to create an immersive experience
+    for my friends who are coming over tonight, and I want to project some images
+    onto the wall. But I've never used a projector before - do you have any advice
+    on how to get it working?\"\n- Here are 5 different ways a user might ask the
+    question \"How to connect a projector\" and my answers in Chinese:\n- **1. How
+    do I connect my projector to a TV?**\n- 问：如何连接投影机到电视？\n- 答：您可以使用HDMI缆将投影机连接到电视，然后在电视的设置中选择投影机作为输入源。\n\
+    - Translation: You can use an HDMI cable to connect the projector to the TV, then
+    select the projector as the input source in the TV's settings\n- **2. What cables
+    do I need to connect a projector to my laptop?**\n- 问：我需要什么有线来连接投影机到笔记本电脑？\n-
+    答：您需要一个HDMI-VGA转换器或一个Mini-HDMI-VGA转换器，或者使用USB-C转换器。如果您的笔记本电脑支持wireless projection，请使用无线投射技术。\n\
+    - Translation: You need an HDMI-VGA converter or a Mini-HDMI-VGA converter, or
+    use a USB-C converter. If your laptop supports wireless projection, you can use
+    wireless projection technology\n- **3. How do I connect my projector to a computer
+    with a DVI port?**\n- 问：我如何连接投影机到计算机的DVI口？\n- 答：您可以使用HDMI-DVI转换器将投影机连接到计算机，然后在计算机的设置中选择投影机作为输入源。\n\
+    - Translation: You can use an HDMI-DVI converter to connect the projector to the
+    computer, then select the projector as the input source in the computer's settings\n\
+    - **4. Can I wirelessly connect my projector to a tablet or smartphone?**\n- 问：我是否可以无线连接投影机到平板电脑或智能手机？\n\
+    - 答：是的，如果您的投影机和设备支持wireless projection，请使用无线投射技术连接它们。\n- Translation: Yes, if
+    your projector and device support wireless projection, you can use wireless projection
+    technology to connect them\n- **5. What's the best way to connect a projector
+    to a DVD player?**\n- 问：我如何连接投影机到DVD播放器？\n- 答：您可以使用HDMI缆将投影机连接到DVD播放器，然后在DVD播放器的设置中选择投影机作为输入源。\n\
+    - Translation: You can use an HDMI cable to connect the projector to the DVD player,
+    then select the projector as the input source in the DVD player's settings"

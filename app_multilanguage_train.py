@@ -3,15 +3,32 @@ import requests
 from ruamel.yaml import YAML
 import os
 from pathlib import Path
+import csv
+import time
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "llama3"  # Or your multilingual Ollama model
+RASA_URL = "http://localhost:5005/webhooks/rest/webhook"
+MODEL = "llama3"
 
-LANGUAGES = ["Chinese", "Japanese", "English", "French", "Spanish"]
-INTENT_NAME = "ask_projector_setup"
+LANGUAGES = ["Chinese", "Japanese", "French", "Spanish"]
+INTENT_NAME = "query_knowledge_base"
 
 NLU_FILE = "data/nlu.yml"
 RESPONSES_FILE = "domain.yml"
+
+TOPIC_LIST = [
+    "how to connect a projector",
+    "how to Operating the projector",
+    "how to reset the device",
+    "how to Managing the lamp",
+    "how to Managing content,playlists, and storage",
+    "how to check lamp hours",
+    "how to Working with channels",
+    "what is the current projector model",
+    "how to Managing color setting files",
+    "how to fix keystone issue",
+    "how to work with Test patterns"
+]
 
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -24,7 +41,7 @@ def ask_ollama(prompt):
             "prompt": prompt,
             "stream": False
         })
-        res.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        res.raise_for_status()
         return res.json()["response"].strip()
     except requests.exceptions.RequestException as e:
         print(f"Error: Connection to Ollama failed: {e}")
@@ -37,8 +54,9 @@ def ask_ollama(prompt):
         return ""
 
 
-def generate_questions(base_topic, num_questions=5):
-    prompt = f"Generate {num_questions} natural ways someone might ask: '{base_topic}'"
+def generate_questions(topic, num_questions=5):
+    lang = random.choice(LANGUAGES)
+    prompt = f"Generate {num_questions} different ways a user might ask the question: '{topic}' and answer me in {lang}"
     raw = ask_ollama(prompt)
     if not raw:
         return []
@@ -49,6 +67,17 @@ def generate_questions(base_topic, num_questions=5):
 def generate_answer(question, lang):
     prompt = f"Answer the question below in BOTH English and {lang}:\n\n{question}"
     return ask_ollama(prompt)
+
+
+def send_to_rasa(question):
+    try:
+        res = requests.post(RASA_URL, json={"sender": "test_user", "message": question})
+        res.raise_for_status()
+        responses = res.json()
+        return " ".join([r.get("text", "") for r in responses if "text" in r])
+    except requests.exceptions.RequestException as e:
+        print(f"Error: Connection to Rasa failed: {e}")
+        return ""
 
 
 def append_to_nlu(intent_name, examples):
@@ -72,21 +101,15 @@ def append_to_nlu(intent_name, examples):
     if "nlu" not in nlu_data or nlu_data["nlu"] is None:
         nlu_data["nlu"] = []
 
-    # Find or create the intent entry
-    intent_entry = None
-    for entry in nlu_data["nlu"]:
-        if entry.get("intent") == intent_name:
-            intent_entry = entry
-            break
+    intent_entry = next((entry for entry in nlu_data["nlu"] if entry.get("intent") == intent_name), None)
 
     if intent_entry is None:
         intent_entry = {"intent": intent_name, "examples": ""}
         nlu_data["nlu"].append(intent_entry)
 
-    # Ensure examples is a string and add new examples
     existing_examples = intent_entry.get("examples", "")
     if not isinstance(existing_examples, str):
-        existing_examples = "" # Reset if it's not a string
+        existing_examples = ""
 
     example_set = set(e.strip() for e in existing_examples.split('\n- ') if e.strip())
     for example in examples:
@@ -97,7 +120,6 @@ def append_to_nlu(intent_name, examples):
     intent_entry["examples"] = existing_examples.strip()
     if not intent_entry["examples"].startswith("- "):
         intent_entry["examples"] = "- " + intent_entry["examples"]
-
 
     with open(nlu_path, "w", encoding="utf-8") as f:
         yaml.dump(nlu_data, f)
@@ -132,32 +154,50 @@ def append_to_responses(intent_name, answers):
         yaml.dump(domain_data, f)
 
 
-def run_multilingual_training(topic, num_questions=5):
-    selected_lang = random.choice(LANGUAGES)
-    print(f"🗣️ Generating questions in English for topic: {topic}")
-    print(f"🌍 Answering in: English + {selected_lang}\n")
+def log_to_csv(log_file, rows):
+    with open(log_file, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        for row in rows:
+            writer.writerow(row)
 
-    questions = generate_questions(topic, num_questions)
-    if not questions:
-        print("Could not generate questions. Aborting.")
-        return
 
-    answers = [generate_answer(q, selected_lang) for q in questions]
-    answers = [a for a in answers if a] # Filter out empty answers
+def main():
+    log_file = "rasa_generated_training_log.csv"
+    with open(log_file, "w", newline='', encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Topic", "Generated Question", "Rasa Answer", "Multilingual Answer"])
 
-    if not answers:
-        print("Could not generate any answers. Aborting.")
-        return
+    for topic in TOPIC_LIST:
+        selected_lang = random.choice(LANGUAGES)
+        print(f"\n📌 Topic: {topic} | Language: {selected_lang}")
 
-    print("\n📦 Generated Training Data:\n")
-    for q, a in zip(questions, answers):
-        print(f"Q: {q}\nA: {a}\n{'-'*40}")
+        questions = generate_questions(topic)
+        if not questions:
+            print("Could not generate questions. Skipping topic.")
+            continue
 
-    # Append to NLU and Domain
-    append_to_nlu(INTENT_NAME, questions)
-    append_to_responses(INTENT_NAME, answers)
-    print(f"\n✅ Successfully updated {NLU_FILE} and {RESPONSES_FILE}.")
+        csv_rows = []
+        multilingual_answers = []
+
+        for q in questions:
+            print(f"❓ Q: {q}")
+            rasa_answer = send_to_rasa(q)
+            print(f"💬 Rasa A: {rasa_answer}")
+
+            multilingual_answer = generate_answer(q, selected_lang)
+            print(f"🌍 LLM A: {multilingual_answer}")
+
+            csv_rows.append([topic, q, rasa_answer, multilingual_answer])
+            if multilingual_answer:
+                multilingual_answers.append(multilingual_answer)
+
+            time.sleep(1)
+
+        log_to_csv(log_file, csv_rows)
+        append_to_nlu(INTENT_NAME, questions)
+        append_to_responses(INTENT_NAME, multilingual_answers)
+        print(f"\n✅ Successfully updated {NLU_FILE}, {RESPONSES_FILE}, and logged to {log_file}.")
 
 
 if __name__ == "__main__":
-    run_multilingual_training("How to set up a projector?")
+    main()
