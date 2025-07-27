@@ -1,6 +1,7 @@
 import requests
 import csv
 import time
+import random
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
@@ -21,7 +22,9 @@ TOPIC_LIST = [
 ]
 
 def generate_questions(topic, num_questions=5):
-    prompt = f"Generate {num_questions} different ways a user might ask the question: '{topic}'"
+    langs = ["chinese", "japanese", "french", "spanish"]
+    lang = random.choice(langs)
+    prompt = f"Generate {num_questions} different ways a user might ask the question: '{topic}' and answer me in {lang}"
     res = requests.post(OLLAMA_URL, json={"model": MODEL, "prompt": prompt, "stream": False})
     raw = res.json()["response"]
     return [line.strip("-•0123456789. ").strip() for line in raw.strip().split("\n") if line.strip()]
